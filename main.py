@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
 
 spark = SparkSession \
     .builder \
@@ -8,10 +9,9 @@ spark = SparkSession \
 
 data = spark.read.text("README.md")
 
-sparkCount = data.filter(data.value.contains("Spark")).count()
-sparkCount2 = data.filter(data.value.contains("spark")).count()
+wordCounts = data.select(explode(split(data.value, "\s+")).alias("word")).groupBy("word").count()
 
-print("UpperCase start 'Spark' count:", sparkCount)
-print("LowerCase start 'spark' count:", sparkCount2)
-
-print("Total any case 'spark' count:", sparkCount + sparkCount2)
+wordCounts.createOrReplaceTempView("TextTable")
+sqlDF = spark.sql("SELECT * FROM TextTable where word in ('Spark', 'spark')")
+print("Sadece eşsiz bir şekilde kelimeyi içeren kayıtların sonucu")
+sqlDF.show()
